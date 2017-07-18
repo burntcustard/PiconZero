@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// GNU GPL V3
+// Test code for 4tronix Picon Zero
+
 var pz = require('./piconzero');
 
 pz.init();

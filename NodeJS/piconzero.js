@@ -5,7 +5,7 @@
 - 
 - 2 motors driven by H-Bridge: (4 outputs)
 - 6 general purpose outputs: Can be LOW, HIGH, PWM, Servo or WS2812B
-- 4 general purpose inputs: Can be Analog or Digital
+- 4 general purpose inputs: Can be Analog, Digital or the temperature sensor DS18B20
 -
 */
 
@@ -20,7 +20,7 @@ function pz() {
         Input3_Data: 4  //      Word  0 or 1 for Digital, 0..1023 for Analog
     }
     //Data Values for Output Data Registers
-    var OutMode = {
+    this.OutMode = {
         Digital: 0, //  Byte    0 is OFF, 1 is ON
         PWM: 1,     //  Byte    0 to 100 percentage of ON time
         Servo: 2,   //  Byte    -100 to + 100 Position in degrees
@@ -28,11 +28,10 @@ function pz() {
 
     }
 
-    var InMode = {
+    this.InMode = {
         Digital: 0, 
         Analog:  1,
-        DS18B20: 2,
-        DHT11: 3
+        DS18B20: 2
         // (NB. 0x80 is Digital input with pullup)
     }
 
@@ -61,7 +60,8 @@ function pz() {
     //---------------------------------------------;
     // Initialise the Board (same as cleanup)
 
-    //TODO: Port the repeat mechanism
+    //TODO: Port the repeat mechanism with a wait
+    //https://hackernoon.com/idempotency-apis-and-retries-34b161f64cb4
 
     this.init = function (debug=false) {
         DEBUG = debug;
@@ -69,8 +69,8 @@ function pz() {
 
         bus.writeBytes(Commands.RESET, [0],function(err) {
             if (err) {
-                    console.log('Error in init() %s',err);
-                    }
+                    throw(err);
+            }
         });
     }
 
@@ -92,6 +92,52 @@ function pz() {
             }
         });
         return [rval[1],rval[0]];
+    }
+
+    //Set configuration of selected output  
+    // 0: Digital On/Off, 1: PWM, 2: Servo, 3: WS2812B
+    this.setOutputConfig = function (output, mode) {
+    if (output < 0 || output > 5) {  throw(new Error("Invalid output channel")); }
+    if (mode < 0 || mode > 3) { throw(new Error("Invalid output mode")); }
+
+    bus.writeBytes(Commands.OUTCFG0 + output, [mode],function(err) {
+            if (err) {
+                    throw(err);
+            }
+        });
+    }
+
+    // Set output data for selected output channel
+    // Mode  Name    Type    Values
+    // 0     On/Off  Byte    0 is OFF, 1 is ON
+    // 1     PWM     Byte    0 to 100 percentage of ON time
+    // 2     Servo   Byte    -100 to + 100 Position in degrees
+    // 3     WS2812B 4 Bytes 0:Pixel ID, 1:Red, 2:Green, 3:Blue
+
+    this.setOutput = function (channel, value) {
+    if (channel < 0 || channel > 5)  {  throw(new Error("Invalid output channel")); }
+    
+    bus.writeBytes(Commands.OUTPUT0 + channel, [value],function(err) {
+        if (err) {
+            throw(err);
+        }
+    });
+    }
+
+
+    //TODO:
+    // motor must be in range 0..1
+    // value must be in range -128 - +127
+    // values of -127, -128, +127 are treated as always ON,, no PWM
+    this.setMotor = function (motor, value) {
+        if (motor < 0 || motor > 1) {  throw(new Error("Invalid motor channel")); }
+        if (value<-128 || value<128) {  throw(new Error("Invalid motor value")); }
+        
+        bus.writeBytes(Commands.MotorA + motor, [value],function(err) {
+        if (err) {
+                throw(err);
+        }
+        });
     }
 }
 

@@ -3,7 +3,7 @@
 
 /* Picon Zero CONTROL
 - 
-- 2 motors driven by H-Bridge: (4 outputs)
+- 2 motors driven by H-Bridge (DRV8833): (4 outputs)
 - 6 general purpose outputs: Can be LOW, HIGH, PWM, Servo or WS2812B
 - 4 general purpose inputs: Can be Analog, Digital or the temperature sensor DS18B20
 -
@@ -97,14 +97,14 @@ function pz() {
     //Set configuration of selected output  
     // 0: Digital On/Off, 1: PWM, 2: Servo, 3: WS2812B
     this.setOutputConfig = function (output, mode) {
-    if (output < 0 || output > 5) {  throw(new Error("Invalid output channel")); }
-    if (mode < 0 || mode > 3) { throw(new Error("Invalid output mode")); }
+        if (output < 0 || output > 5) {  throw(new Error("Invalid output channel")); }
+        if (mode < 0 || mode > 3) { throw(new Error("Invalid output mode")); }
 
-    bus.writeBytes(Commands.OUTCFG0 + output, [mode],function(err) {
-            if (err) {
-                    throw(err);
-            }
-        });
+        bus.writeBytes(Commands.OUTCFG0 + output, [mode],function(err) {
+                if (err) {
+                        throw(err);
+                }
+            });
     }
 
     // Set output data for selected output channel
@@ -115,29 +115,52 @@ function pz() {
     // 3     WS2812B 4 Bytes 0:Pixel ID, 1:Red, 2:Green, 3:Blue
 
     this.setOutput = function (channel, value) {
-    if (channel < 0 || channel > 5)  {  throw(new Error("Invalid output channel")); }
-    
-    bus.writeBytes(Commands.OUTPUT0 + channel, [value],function(err) {
-        if (err) {
-            throw(err);
-        }
-    });
+        if (channel < 0 || channel > 5)  {  throw(new Error("Invalid output channel")); }
+        
+        bus.writeBytes(Commands.OUTPUT0 + channel, [value],function(err) {
+            if (err) {
+                throw(err);
+            }
+        });
     }
 
-
-    //TODO:
     // motor must be in range 0..1
     // value must be in range -128 - +127
     // values of -127, -128, +127 are treated as always ON,, no PWM
-    this.setMotor = function (motor, value) {
+    this.setMotor = function (motor, speed) {
         if (motor < 0 || motor > 1) {  throw(new Error("Invalid motor channel")); }
-        if (value<-128 || value<128) {  throw(new Error("Invalid motor value")); }
+        if (speed<-128 || speed > 128) {  throw(new Error("Invalid motor speed")); }
         
-        bus.writeBytes(Commands.MotorA + motor, [value],function(err) {
+        bus.writeBytes(Commands.MotorA + motor, [speed],function(err) {
         if (err) {
                 throw(err);
         }
         });
+    }
+
+    this.forward = function(speed) {
+        this.setMotor (0, speed);
+        this.setMotor (1, speed);
+    }
+
+    this.reverse = function (speed) {
+        this.setMotor (0, -speed);
+        this.setMotor (1, -speed);
+    }
+
+    this.spinLeft = function (speed) {
+        this.setMotor (0, -speed);
+        this.setMotor (1, speed);
+    }
+
+    this.spinRight = function (speed) {
+        this.setMotor (0, speed);
+        this.setMotor (1, -speed);
+    }
+
+    this.stop = function() {
+        this.setMotor (0, 0)
+        this.setMotor (1, 0)
     }
 }
 

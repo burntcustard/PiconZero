@@ -141,8 +141,8 @@ function pz() {
     // Set output data for selected output channel
     // Mode  Name    Type    Values
     // 0     On/Off  Byte    0 is OFF, 1 is ON
-    // 1     PWM     Byte    0 to 100 percentage of OFF time (seems to be opposite of comments in Python library)
-    // 2     Servo   Byte    Position 0 to 180 degrees (again Python doc does not seem to be right)
+    // 1     PWM     Byte    0 to 100 percentage of ON time 
+    // 2     Servo   Byte    Position 0 to 180 degrees (Python doc does not seem to be right)
     // 3     WS2812B 4 Bytes 0:Pixel ID, 1:Red, 2:Green, 3:Blue
 
     this.setOutput = function (channel, value) {
@@ -193,6 +193,8 @@ function pz() {
         this.setMotor (0, 0)
         this.setMotor (1, 0)
     }
+
+    //Todo: Pixel functions
 }
 
 module.exports = new pz();

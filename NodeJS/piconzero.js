@@ -87,7 +87,7 @@ function pz() {
     this.getRevision = function () {
         var rval = bus.readBytes(Registers.Revision,2,function(err) {
             if (err) {
-                    console.log ('Error in getRevision()');
+                    console.log ('Error in getRevision() %s', err);
             }
         });
         return [rval[1],rval[0]];
@@ -130,17 +130,19 @@ function pz() {
         var rval = bus.readBytes(Registers.Input0_Data+channel,2,function(err) {
             if (err) {
                     console.log ('Error in readChannel()');
-            }
+                    console.log (err);
+            } 
         });
-        // Data is split into 2 8bit bytes, low then high
+        // Data is split into 2 8bit bytes, low then high, should be values 1 to 1023
+        // Have seen it glitch and return very high values though
         return (rval[1] << 8) + rval[0];
     }
 
     // Set output data for selected output channel
     // Mode  Name    Type    Values
     // 0     On/Off  Byte    0 is OFF, 1 is ON
-    // 1     PWM     Byte    0 to 100 percentage of ON time
-    // 2     Servo   Byte    -100 to + 100 Position in degrees
+    // 1     PWM     Byte    0 to 100 percentage of OFF time (seems to be opposite of comments in Python library)
+    // 2     Servo   Byte    Position 0 to 180 degrees (again Python doc does not seem to be right)
     // 3     WS2812B 4 Bytes 0:Pixel ID, 1:Red, 2:Green, 3:Blue
 
     this.setOutput = function (channel, value) {
@@ -158,7 +160,7 @@ function pz() {
     // values of -127, -128, +127 are treated as always ON,, no PWM
     this.setMotor = function (motor, speed) {
         if (motor < 0 || motor > 1) {  throw(new Error("Invalid motor channel")); }
-        if (speed<-128 || speed > 128) {  throw(new Error("Invalid motor speed")); }
+        if (speed<-128 || speed > 127) {  throw(new Error("Invalid motor speed")); }
         
         bus.writeBytes(Commands.MotorA + motor, [speed],function(err) {
         if (err) {

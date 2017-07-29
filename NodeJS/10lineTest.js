@@ -9,7 +9,7 @@ setInterval(function(){
     ana0 = pz.readInput(0);
     pz.setOutput(0, ana0/10);
     pz.setPixel(0,0,0,ana0/4);
-    pz.setOutput(2, Number(ana0/7));
+    pz.setOutput(2, ana0/7.0);
  }, 100);
 
 

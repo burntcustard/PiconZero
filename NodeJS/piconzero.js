@@ -25,7 +25,6 @@ function pz() {
         PWM: 1,     //  Byte    0 to 100 percentage of ON time
         Servo: 2,   //  Byte    -100 to + 100 Position in degrees
         WS2812B:3   //  4 Bytes 0:Pixel ID, 1:Red, 2:Green, 3:Blue
-
     }
 
     this.InMode = {
@@ -55,13 +54,13 @@ function pz() {
 
     var i2c = require('i2c');
     var pzaddr = 0x22; // I2C address of Picon Zero
+    //Change the following to /dev/i2c-0 for early Pi models
     var bus = new i2c(pzaddr , {device: '/dev/i2c-1'}); 
 
     //---------------------------------------------;
     // Initialise the Board (same as cleanup)
 
     //TODO: Port the repeat mechanism with a wait
-    //https://hackernoon.com/idempotency-apis-and-retries-34b161f64cb4
 
     this.init = function (debug=false) {
         DEBUG = debug;
@@ -94,7 +93,7 @@ function pz() {
         return [rval[1],rval[0]];
     }
 
-    //Set configuration of selected output  
+    // Set configuration of selected output  
     // 0: Digital On/Off, 1: PWM, 2: Servo, 3: WS2812B
     this.setOutputConfig = function (output, mode) {
         if (output < 0 || output > 5) {  throw(new Error("Invalid output channel")); }
@@ -105,6 +104,36 @@ function pz() {
                         throw(err);
                 }
             });
+    }
+
+    // Set configuration of selected input channel
+    // 0: Digital, 1: Analog, 2: DS18B20
+    this.setInputConfig = function(channel, mode, pullup = false) {
+        if (channel < 0 || channel > 3) {  throw(new Error("Invalid input channel")); }
+        if (mode < 0 || mode > 2) { throw(new Error("Invalid input mode")); }
+
+        if (mode == 0 && pullup == true) {
+            mode = 128;
+        }
+        bus.writeBytes(Commands.INCFG0 + channel, [mode],function(err) {
+                if (err) {
+                        throw(err);
+                } 
+            });
+    }
+
+    // Read data for selected input channel (analog or digital)
+    // Channel is in range 0 to 3
+    this.readInput = function (channel) {
+        if (channel < 0 || channel > 3) {  throw(new Error("Invalid input channel")); }
+
+        var rval = bus.readBytes(Registers.Input0_Data+channel,2,function(err) {
+            if (err) {
+                    console.log ('Error in readChannel()');
+            }
+        });
+        // Data is split into 2 8bit bytes, low then high
+        return (rval[1] << 8) + rval[0];
     }
 
     // Set output data for selected output channel
